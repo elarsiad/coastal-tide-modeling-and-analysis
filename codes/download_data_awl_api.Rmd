@@ -1,0 +1,116 @@
+
+
+```{r include=FALSE, message=FALSE, warning=FALSE}
+#install.packages(c( "openxlsx","lubridate", "data.table", #"gdata", #"openair", "plyr", "gridExtra", #"ggplot2","kableExtra")) ####RUNNING #SEKALI SAJA####
+
+require(openxlsx)
+require(lubridate)
+require(data.table)
+require(gdata)
+library(dplyr)
+require(plyr)
+require(ggplot2)
+require(plotrix)
+library(magrittr)
+library(ggrepel)
+library(forcats)
+library(scales)
+require(RColorBrewer)
+require(openair)
+require(gridExtra)
+require(devtools)
+library(httr)
+library(jsonlite)
+library(rlist)
+library(raster)
+library(sp)
+library(pracma)
+library(expss)
+
+print("!!!!.....MULAI.....!!!!")
+
+setwd('C:/Users/ejhas/OneDrive/Documents/BIMTEK/PASUT')  # sesuaikan di mana mau menyimpan datanya
+
+###############################################################################################
+                                                                                             ##
+request <- GET("http://202.90.199.132/api/v1/station/aws?key=0123456789abcdef")              ##
+http_type(request)                                                                           ##
+                                                                                             ##
+body1 <- list (                                                                              ##
+  "id_aws" = "3000000036",                      ##JANGAN LUPA DIGANTI....!!!                 ##
+  "start_datetime"= "2021-04-01 00:00:00",      ##JANGAN LUPA DIGANTI....!!!                 ##
+  "end_datetime" = "2021-04-15 23:59:59"        ##JANGAN LUPA DIGANTI....!!!                 ##
+   )                                                                                         ##
+                                                                                             ##
+body2 <- list (                                                                              ##
+  "id_aws" = "3000000036",                       ##JANGAN LUPA DIGANTI....!!!                ##
+  "start_datetime"= "2021-04-16 00:00:00",       ##JANGAN LUPA DIGANTI....!!!                ##
+  "end_datetime" = "2021-04-30 23:59:59"         ##JANGAN LUPA DIGANTI....!!!                ##
+   )                                                                                         ##                                                                                                                 ##
+###############################################################################################
+                                                                                             
+post_result1 <- POST("http://202.90.199.132/api/v1/data/aws?key=0123456789abcdef",           
+                    body=body1, encode = "json",verbose())                                   
+
+post_result1                                                                                 
+post_result_text1 <- content(post_result1, "text")                                           
+get_result_text1 <- fromJSON(post_result_text1, flatten = TRUE)                              
+                                                                                             
+get_result_df1 <- as.data.frame(get_result_text1) #============> buat lihat data frame nya.. 
+                                                                                             
+###############################################################################################
+
+post_result2 <- POST("http://202.90.199.132/api/v1/data/aws?key=0123456789abcdef",
+                    body=body2, encode = "json",verbose())
+
+post_result2
+post_result_text2 <- content(post_result2, "text")
+get_result_text2 <- fromJSON(post_result_text2, flatten = TRUE)
+
+get_result_df2 <- as.data.frame(get_result_text2) #============> buat lihat data frame nya..  
+
+get_result_df <- rbind(get_result_df1, get_result_df2)
+
+# tanggal <- as.numeric(substr(get_result_df$waktu, 9, 10))
+# jam <- as.numeric(substr(get_result_df$waktu, 12, 13))
+# menit <- as.numeric(substr(get_result_df$waktu, 15, 16))
+
+tanggal <- (substr(get_result_df$data.waktu, 1, 15))
+
+#get_result_df <- cbind(tanggal, jam, menit, get_result_df)
+df <- cbind(tanggal, get_result_df)
+
+
+df <- subset(df, !(data.windspeed=="0.00" & data.winddir=="0.00"& data.temp=="0.00"& data.rh=="0.00"& data.pressure=="0.00"&data.rain=="0.00"&data.solrad=="0.00"&data.netrad=="0.00"&data.watertemp=="0.00"))
+
+data1 <- df %>% distinct(tanggal, .keep_all = TRUE)  #===============>> mengambil data teratas per 10 menit
+
+colnames(data1)[colnames(data1)=="data.waktu"] <- "waktu"
+colnames(data1)[colnames(data1)=="data.netrad"] <- "netrad"
+colnames(data1)[colnames(data1)=="data.pancilevel "] <- "pancilevel"
+colnames(data1)[colnames(data1)=="data.pancitemp"] <- "pancitemp"
+colnames(data1)[colnames(data1)=="data.pressure"] <- "pressure"
+colnames(data1)[colnames(data1)=="data.rain"] <- "rain"
+colnames(data1)[colnames(data1)=="data.rh"] <- "rh"
+colnames(data1)[colnames(data1)=="data.solrad"] <- "solrad"
+
+colnames(data1)[colnames(data1)=="data.ta_max"] <- "ta_max"
+colnames(data1)[colnames(data1)=="data.ta_min"] <- "ta_min"
+colnames(data1)[colnames(data1)=="data.temp"] <- "temp"
+colnames(data1)[colnames(data1)=="data.waterlevel"] <- "waterlevel"
+colnames(data1)[colnames(data1)=="data.watertemp"] <- "watertemp"
+colnames(data1)[colnames(data1)=="data.windspeed"] <- "windspeed"
+colnames(data1)[colnames(data1)=="data.winddir"] <- "winddir"
+
+cols = c(7:20)
+data1[,cols] %<>% lapply(function(x) as.numeric(as.character(x)))
+datax1 <- data1[c(6,16)]
+datax1$waktu <- ymd_hms(datax1$waktu)
+datax1$waktu <- ymd_hm(substr(datax1$waktu,1,17))
+datax1$waktu <- as.character(datax1$waktu)
+write.xlsx(datax1, file = "data_awl_Kupang_April_2021.xlsx", row.names=F, col.names = T, borders="columns") # jangan lupa ganti
+
+####################################################################################
+
+```
+
