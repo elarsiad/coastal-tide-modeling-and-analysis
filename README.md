@@ -1,8 +1,8 @@
-# Tidal Forecast Project 
+# Tidal Forecast and Analysis Project 
 
 ## Description
 
-This project contains Matlab scripts to predict and validate tidal levels.
+This project contains Matlab scripts to predict, analyse, and validate tidal levels.
 
 `download_data_awl_api.m` downloads the water level data from the marine automated weather station and use these as an input to forecast the tides.
 
